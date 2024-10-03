@@ -67,7 +67,7 @@ part of your text:
     label tightMeasurement.
 ```
 
-![multiple attributes](figures/multipleTextAttributes.png)
+![Multiple attributes.](figures/multipleTextAttributes.png width=60)
 
 
 ### Text size
@@ -78,22 +78,24 @@ Let's familiarize ourselves with those basic measures.
 Bloc will get the measures (in `BATextParagraphSpan >> measure`)
 to get the size of your text, and position it into your element.
 
+Figure *@MulAttri@* describes the information listed below: 
+
 **width**
 :  This is the width of the glyph image's bounding box.
 
 **height**
 : This is the height of the glyph image's bounding box.
 
-**Advance**
+**advance**
 :  Distance to increment the pen position when the glyph is drawn as part of a string of text.
 
-**BearingX**
+**bearingX**
 :  Distance from the current cursor position to the leftmost border of the glyph image's bounding box.
 
-**BearingY**
+**bearingY**
 : Distance from the current cursor position (on the baseline) to the topmost border of the glyph image's bounding box.
 
-![glyph figure](figures/glyph-metrics-3.png)
+![Describing various font elements.](figures/glyph-metrics-3.png width=40&label=MulAttri)
 
 **ascent**
 :    portion of letter that extends above the mean line of a font.
@@ -104,7 +106,7 @@ to get the size of your text, and position it into your element.
 **baseline**
 :    line upon which most letters sit and below which descenders extend.
 
-![Typograpy.](figures/2880px-Typography_Line_Terms.png)
+![Typograpy.](figures/2880px-TypographyLineTerms.pdf width=60)
 
 References:
 
@@ -128,9 +130,9 @@ your graphical interface; it'll follow the same layout rules.
 
 - tight measurement: Exact width and height of the used glyphs.
 - label measurement: Same width that tight measurement. The height will add to itself the *ascent* and *descent* of the glyph.
-- editor measurement. Same height as label measurement. The width will add to itself the *advance* of the glyph
+- editor measurement. Same height as label measurement. The width will add to itself the *advance* of the glyph.
 
-![text measure](figures/textMeasure.png)
+![Text measures.](figures/textMeasure.png width=80)
 
 By default, *BlTextElement* will follow the *tightMeasurement* measure.
 
@@ -166,6 +168,90 @@ BlElement new
 
 ```
 
-which gives:
+whose result is shown in Figure *@rect@*.
 
-![rectangle with numbers](figures/rectangleWithNumbers.png)
+![Rectangle with numbers.](figures/rectangleWithNumbers.png width=60&label=rect)
+
+
+
+### BlText vs. BlTextElement
+
+You have 2 different levels to manage text in Bloc.
+- `BlText` and its subclass `BlRopedText` create a text model where you can specify its attributes and style.
+- `BlTextElement` and its subclasses will properly display the text inside a Bloc element.
+
+A small example. You can notice that `BlText` background is different from `BlTextElement` background. 
+
+```smalltalk
+| labelText label |
+labelText := 'hello from bloc' asRopedText
+             background: Color orange ;
+             fontSize: 75;
+             fontName: 'Source Code Pro';
+             italic;
+             underline;
+             underlineColor: Color red;
+             vertical.
+
+(labelText from: 1 to: 5) foreground: Color blue.
+(labelText from: 7 to: 11) foreground: Color white.
+(labelText from: 12 to: 15) foreground: Color red.
+
+label := (BlTextElement text: labelText) position: 50 @ 10; background: Color yellow.
+```
+
+you can define the style of your text through BlTextAttributesStyler
+
+````smalltalk
+text := 'Hi John' asRopedText.
+
+styler := BlTextAttributesStyler on: (text from: 3 to: 7).
+styler
+bold;
+italic;
+fontSize: 30;
+fontName: 'Roboto';
+monospace;
+foreground: Color green.
+styler style.
+```
+
+or using a fluent API
+
+````smalltalk
+text := 'Hi John' asRopedText.
+(text from: 3 to: 7) stylerDo: [ :aStyler | aStyler bold italic foreground: Color red ].
+````
+
+As you may have noticed, this gives you a very fine-grained control over the style of your text.
+You also need to re-specify attributes when your text changes.
+If you want all your text to use the same attribute, you can then use `BlAttributedTextElement`. 
+You can then change your text, `BlAttributedTextElement` will reuse its attributes.
+
+
+```smalltalk
+text := 'Hi John' asRopedText.
+
+element := BlAttributedTextElement new.
+attributes := element attributesBuilder
+              foreground: Color green;
+              monospace;
+              bold;
+              italic;
+              fontSize: 30;
+              fontName: 'Roboto';
+              monospace.
+
+label := (element text: text)
+         position: 50 @ 10;
+         background: Color yellow;
+         margin: (BlInsets all: 2);
+         padding: (BlInsets all: 2);
+         outskirts: BlOutskirts centered;
+         border: (BlBorder paint: Color red width: 2).
+
+element text: 'hello world' asRopedText.
+label.
+```
+
+

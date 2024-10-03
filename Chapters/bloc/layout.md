@@ -1,26 +1,37 @@
-## Layout in Bloc
+## Layouts in Bloc
 
 ### Introduction
 
 Widgets aren't just simple components; they're complex assemblies of various
-elements. To create more intricate block elements, you'll need to blend them
+elements. To create more intricate Bloc elements, you'll need to blend them
 together seamlessly. Each element can be developed and examined independently,
 which is advantageous during the development phase.  However, to construct a
 complete graphical interface, you'll need to seamlessly integrate these elements
-with each other or, at the very least, place them within a bloc *space*.
+with each other or, at the very least, place them within a Bloc *space*.
 
-Element in a bloc scene are added to each other, ending in a tree-like structure
-where parents and children can identify each other, and each element being an
-instance of BlElement, the root element of Bloc.. Each element have its own
+Element in a Bloc scene are added to each other, ending in a tree-like structure
+where parents and children can identify each other, and each element is an
+instance of `BlElement`, the root element of Bloc. Each element has its own
 visual properties, like background, border, geometry, etc. The final appearance
 depends on the graphical properties of each element and how they're arranged
 together in the layout.
 
-![Multiple elements.](figures/multipleElements.png)
+![Multiple elements.](figures/multipleElements.png width=70)
 
-![Element tree.](figures/blelementtreestructure.png)
 
-Layout constitutes a fundamental aspect of *Bloc*. Rather than constructing your
+### Parent children
+
+Elements can be added in the element tree of an element with the `addChild:` method. You can add multiple elements at once 
+with `addChildren:`. You can of course remove sub-element with `removeChild:` and `removeChildren:` methods.
+Children cannot be rendered outside of the geometry of their parent, unless you set `clipChildren: false` for a parent element.
+
+
+Browse `BlElement` to find all the available methods
+to manage the addition and removal of the elements composing your element.
+
+![Element tree.](figures/blelementtreestructure.png width=80)
+
+Layouts constitute a fundamental aspect of *Bloc*. Rather than constructing your
 entire widget within a single *drawing* method, it advocates for the creation of
 small elements with distinct geometries and visual attributes, which are then
 integrated using diverse layout strategies. The layout property determines the
@@ -28,12 +39,10 @@ visual arrangement of the element and its descendants, specifying their
 positions and sizes within the parent container. Moreover, it may influence the
 dimensions of the parent element itself.
 
-When defining layout, two parts must be combined to play together: *parent* and
-*children* elements.
+When defining layout, two parts must be combined to play together: *parent* and *children* elements.
 
-- Parent define which layout strategy to apply to their children
-- Children specify which constraints they will follow, which could impact their
-position and their size.
+- Parents define which layout strategy to apply to their children.
+- Children specify which constraints they will follow, which could impact their position and size.
 
 Layouts are defined by their *type* and their *constraints*. Types are usually
 defined at the parent level with the `layout` method, while you can specify
@@ -43,35 +52,79 @@ small set of constraints, like padding, margin or minimal and maximum
 dimensions, are common among all the layouts. Constraints allow you to clearly
 define the size and the position of your element within its parent.
 
-When you change the position or the size of an element, a requestLayout is sent
+When you change the position or the size of an element, a `requestLayout` is sent
 but the effect on the element’s bounds is actually visible only after the layout
-is computed. In bloc, the layout is computed from a dedicated space Phase,
-applied on each pulse. Have a look at BlSpaceFrame and BlSpaceFramePhase and its
+is computed. In Bloc, the layout is computed from a dedicated space Phase,
+applied on each pulse. Have a look at `BlSpaceFrame` and `BlSpaceFramePhase` and its
 subclasses.
 
 To ease this kind of script one can use `whenLayoutedDoOnce:` which arms a one
 shot event handler that reacts to the `BlElementLayoutComputedEvent` event.
 
-### Element combination
+### element order and overlap
+Your element will be displayed in the order you added them to your parent. You
+can, however, specify their *zIndex*. They will then follow this index order, 
+from low to high.
 
-Elements can be combined with the `addChild:` method. You can add multiple
-elements at once with `addChildren:`. You can of course remove sub-element
-with `removeChild:` and `removeChildren:` method.
+In the example below, with zIndex, element shoud appears from black to red. 
+With zIndex, you can reorder the order of display of the elements. Note that
+zIndex can be negative.
 
-Look at **children add/remove** protocol of `BlElement` for all available method
-to manage addition and removal of the elements composing your widget.
+```smalltalk
+container:= BlElement new geometry: BlRectangleGeometry new; size: 150@150; background: Color lightGray .
+        
+elt1 := BlElement new geometry: BlCircleGeometry new;  size: 100 asPoint; zIndex: 1;  background:Color  black.
+elt2 := BlElement new geometry: BlCircleGeometry new;  size: 100 asPoint; zIndex: 2; position:10@10; background: Color blue.
+elt3 := BlElement new geometry: BlCircleGeometry new; size: 100 asPoint; zIndex: -1; position:20@20; background: Color red.
+        
+container addChildren: {elt1 . elt2 . elt3}.
+
+container.
+```
+
+we have different ways to manage the overlap of your elements in a Bloc scene.
+This also depends of the layout strategy used for your element.
+
+1. When element are added (though addChild: or addChildren:), they are process and displayed one after the other, with the same order they were added, from left to right. You can tell if element must be added before or after another element. This apply as well if some element overlap another, the first one will appear below the next one.
+2. If some element overlap each other, you can specify in which order they should be displayed with  zIndex:.
+
+**NOTE**
+(as of 4th of july 2024), the element order or the elevation (zIndex) are not managed properly when using composition layer, 
+and this element always appears on top (current situation or bug) when it overlap with others 
+
+### element rendering
+
+By default, all your bloc scene will be rendered using the same Alexandrie Canvas and surface.
+In scenarios of "complex enough" elements that don't change on every frame, you can improve performance 
+by using composition layer to saves time by caching the pixels instead of rasterizing on next space redraw.
+
+You can tell your element to be in a composition layer with *compositing:* message. 
+You can change this using *beInSeparateCompositionLayer*, *beInSingleCompositionLayer* or *beWithoutCompositionLayer* message. 
+*beInSingleCompositionLayer* and *beInSeparateCompositionLayer* are 2 different strategies, 
+and tell how children of your element in composition layer will be rendered. 
+By default, BlElement is in *BlCompositingWithoutLayerMode*.
+BlElement  effect can also be applied in their own composition layer, with message *wantCompositionLayer*.
+
+With composition layer activated, your element will be rendered on it's own Canvas and Ae surface, 
+and the result will be added as a separated layer in your parent element canvas. 
+
+![zIndex example](figures/zIndexExample.png)
 
 ### Space around elements
 
 Before jumping on the definition of the position of each element, you can already
-define how close your element will be from each other, with those 2 properties
+define how close your elements will be from each other, with those 2 properties
 
 - `padding:` space between the element and its children.
 - `margin:` space between the element and its parent
 
-Constraints can apply to margin and padding as well,
-as `constraintsDo: [ :c | c margin: (BlInsets all: 10) ])`
-	
+Constraints can apply to margin and padding as well.
+Here is a typical constraint expression: 
+
+```
+element constraintsDo: [ :c | c margin: (BlInsets all: 10) ]
+```
+
 ```smalltalk
 container := BlElement new
 	"no dynamic constraints, we specify element size"
@@ -103,27 +156,29 @@ child := BlElement new
 element addChild: child.
 ```
 
-In this figure, we have 3 elements on top of each other. The purple one
+In Figure *@padding1@*, we have 3 elements on top of each other. The purple one
 has a margin of 15 pixels with the red one and a padding of 35 pixels with the
 yellow one.
 
-![Margin and padding example.](figures/marginAndPadding.png width=60&label=padding1)
+![Margin and padding example.](figures/marginAndPadding.png width=25&label=padding1)
 
 Margin and padding can be applied to all insets for your figures, but need to
 be adapted to your element geometry. The same example but using triangle
-geometry will show you the difference.
+geometry shows you the difference (See Figure *@padding2@*).
 
-![Margin and padding example.](figures/marginAndPaddingwithtriangle.png width=60&label=padding2)
+![Margin and padding example 2.](figures/marginAndPaddingwithtriangle.png width=25&label=padding2)
 
 ### Element size
 
 Size can be determined **statically** or **dynamically**.
- Attention, If you don't use dynamic size, you **must** define it with the message `size:`. 
- The overall bounds of the element are not deduced from its geometry, and its default size
+Attention, if you don't use dynamic size, you **must** define it using the message `size:`. 
+
+The overall bounds of an element are not deduced from its geometry, and its default size
 will be `50@50`, which will certainly be different from *your* own element.
 
-If you use `size:`, the size of the element will be static.
-`element size: aPoint` is a synonym for
+#### Statically.
+If you use the message `size:`, the size of the element will be static.
+Note that the expression `element size: aPoint` is a synonym for
 
 ```smalltalk
 constraintsDo: [ :c |
@@ -131,10 +186,11 @@ constraintsDo: [ :c |
 	c vertical exact: aPoint y ];
 ```
 
+#### Dynamically.
 If you use the constraints `matchParent` or `fitContent` in a child definition, the size of the element will be computed dynamically, dependent on its parent constraints and child space.
 
-- `matchParent`: Child size will fill space left available in parent element.
-- `fitContent` : parent size will depend on the space used by its children.
+- `matchParent` -- child size will fill the space left available in parent element.
+- `fitContent` --  parent size will depend on the space used by its children.
 
 ```smalltalk
 constraintsDo: [ :c |
@@ -143,12 +199,13 @@ constraintsDo: [ :c |
 ```
 
 **Beware to not mix those properties** between parent and child.
-If your child tries to mach its parent, while its parent tries to fit its child's
+If your child tries to match its parent, while its parent tries to fit its child's
 content, the size will be 0 plus the border width.
 
 When the parent uses "fit content" and the child uses "match parent", there is
 no way to determine the size. In such cases, the size of both the parent and
 the child will be 0@0.
+
 
 ### Layout strategy and constraints
 
@@ -156,10 +213,10 @@ A layout defines the way children are positioned inside their parent element. Th
 position is deduced from the layout strategy used. If you don't specify which
 layout your parent element will use, it'll default to `BlBasicLayout` strategy.
 
-You can add an element with `addChild:` and it will be placed according the
-the layout specified.
+You can add an element with `addChild:` and it will be placed according to the
+the specified layout .
 
-A small list of layout is included in Pharo Image:
+Here is the list of layouts available by default
 
 * `BlBasicLayout`
 * `BlLinearLayout`
@@ -172,26 +229,27 @@ A small list of layout is included in Pharo Image:
 The list of all layouts available: `BlLayout allSubclasses`
 
 Each layout has a dedicated constraint object, an instance of
-`BlLayoutCommonConstraints`, which contains layout universal constraints.
+`BlLayoutCommonConstraints` which contains layout universal constraints.
 Constraints are associated with the layout defined by the parent element.
 Each type of layout can further define its own specific constraints by creating
 a subclass of `BlLayoutConstraints`.
 
-### Example
+For example
+- when a parent element uses the layout type `BlLinearLayout`
+- its children constraints are detailed by `BlLinearLayoutConstraints`.
 
-- parent element uses layout type `BlLinearLayout`
-- children constraints are detailed by `BlLinearLayoutConstraints`
+#### Defining constraints. 
 
 You can define constraints at the parent element level when specifying layout
-type: `layout: BlLinearLayout horizontal alignCenter;`
+type. For example`layout: BlLinearLayout horizontal alignCenter;`
 
-or you can refine it constraints in its children
+or you can refine its constraints in its children
 `constraintsDo: [ :c | c linear horizontal alignCenter. ]`
 
-The first option let you define position constraint that apply to all children,
-and is a good fit for *flow layout* or *linear layout*. For layout that have a
-limited number of child, like *frame layout*, it's better to let children decide
-of their position constraints. You'll find some example below.
+The first option lets you define position constraints that apply to all children,
+and is a good fit for *flow layout* or *linear layout*. For layouts that have a
+limited number of children, such as *frame layout*, it's better to let the children decide
+their position constraints. You'll find some example below.
 
 ### Ignoring or interacting with parent layout
 
@@ -201,77 +259,98 @@ and follow *BlBasicLayout* instead, meaning you can place your element at
 arbitrary position within your parent element.
 
 ```smalltalk
-	constraintsDo: [ :c | c ignoreByLayout].
+	constraintsDo: [ :c | c ignoreByLayout ].
 ```
 
 You can also interact with parent layout constraint using `flow`, `frame`,
-`grid`, `linear` or `relative` messages. In the example below, the first element
-will use all the space of its parent, and manage the position of its children
-using `BlFrameLayout` strategy. The second element, which could act as a
-container for other sub-element, apply `BlLinearLayout` strategy, but positions
-itself on his parent using the *frame* constraint.
+`grid`, `linear`, or `relative` messages. 
+
+In the example below, the second element will use all the space of its parent, and manage the position of its children
+using `BlFrameLayout` strategy. The first element, which could act as a
+container for other sub-elements, apply `BlLinearLayout` strategy, but positions
+itself on its parent using the *frame* constraint.
 
 ```smalltalk
-BlElement new
+first := BlElement new
+	layout: BlLinearLayout horizontal alignCenter;
+	background:  Color red;
+	constraintsDo: [ :c |
+		c vertical fitContent.
+		c horizontal fitContent.
+		c frame horizontal alignCenter.
+		c frame vertical alignCenter ].
+second := BlElement new
+	background:  Color blue;
 	layout: BlFrameLayout new;
 	constraintsDo: [ :c |
 		c vertical matchParent.
 		c horizontal matchParent ];
-	addChild: aContainer
-
-aContainer := BlElement new
-	layout: BlLinearLayout horizontal alignCenter;
-	constraintsDo: [ :c |
-	c vertical fitContent.
-	c horizontal fitContent.
-	c frame horizontal alignCenter.
-	c frame vertical alignCenter ].
+	addChild: first.
+second openInSpace
 ```
+SD: I do not see it. 
+
+
 
 ### Example
 
-This define a new element, where children will be positioned using linear
+This define sa new element, where children will be positioned using linear
 layout strategy, and whose side will match space available in parent element.
+(see Figure *@matchplinear@*).
 
 ```smalltalk
-BlElement new
-layout: BlLinearLayout horizontal alignCenter;
-constraintsDo: [ :c |
-	c horizontal matchParent.
-	c vertical matchParent ].
+e := BlElement new.
+e
+	layout: BlLinearLayout horizontal alignCenter;
+	background: Color green;
+	constraintsDo: [ :c |
+		c horizontal matchParent.
+		c vertical matchParent ].
+e2 := BlElement new.
+e2 background: Color red.
+e addChild: e2.
+e3 := BlElement new.
+e3 background: Color white.
+e addChild: e3.
+e openInSpace
 ```
+
+![A parent matching its parent and its children managed linearly.](figures/matchplinear.png width=40&label=matchplinear)
 
 ### Default layout: basicLayout
 
-If your parent don't define any specific layout, it will default to *BlBasicLayout*.
-Using this layout, children can position themselves at arbitrary position within
-the parent coordinate space using *position:*
+If your parent doesn't define any specific layout, it will default to `BlBasicLayout`.
+Using this layout, children can position themselves at arbitrary positions within
+the parent coordinate space using the message `position:`.
 
-`BlElement new position: 50@50.`
+```
+BlElement new position: 50@50.
+```
 
-"BlBasicLayout let you position your children at the position you want them to
-be Layout constraint are irrelevant for this layout, you should specify the size
-of each child element to be added. Those child can them implement their own
-layout strategy"
+`BlBasicLayout` lets you position your children at the position you want them to
+be. Layout constraints are irrelevant for this layout, you should specify the size
+of each child element to be added. Those children can them implement their own
+layout strategy.
 
 #### Example
+The following example shows how you can position children at given positions (see Figure *@defaultlayout@*).
 
 ```smalltalk
-	root := BlElement new
+root := BlElement new
 	border: (BlBorder paint: Color red width: 1);
 	background: (Color red alpha: 0.2);
-	"not necessary, except for reminder, this is the default layout"
+	"not necessary, except as reminder, this is the default layout"
 	  "layout: BlBasicLayout new;"
 	constraintsDo: [ :c |
 		c horizontal matchParent.
 		c vertical matchParent ].
 
-	elt1 := BlElement new
+elt1 := BlElement new
 	border: (BlBorder paint: Color blue width: 1);
 	size: 40 @ 80;
 	background: (Color blue alpha: 0.2);
 	position: 50 @ 40.
-	elt2 := BlElement new
+elt2 := BlElement new
 	border: (BlBorder paint: Color yellow width: 1);
 	size: 40 @ 80;
 	background: (Color yellow alpha: 0.2);
@@ -280,7 +359,11 @@ layout strategy"
 	root addChildren: { elt1 . elt2 }
 ```
 
-![Basic layout.](figures/basiclayout.png)
+![Basic layout.](figures/basiclayout.png width=40&label=defaultlayout)
+
+
+Stef should continue down here.
+
 
 ### Linear layout - BlLinearLayout
 
@@ -326,7 +409,7 @@ root := BlElement new
 			root addChild: elt. ].
 ```
 
-![Linear layout.](figures/linearlayout.png)
+![Linear layout.](figures/linearlayout.png width=70)
 
 ### Flow layout - BlFlowLayout
 
@@ -362,17 +445,17 @@ root := BlElement new
 		c horizontal matchParent .
 		c vertical fitContent  ].
 
-	50 timesRepeat: [
-		| elt |
-		elt := BlElement new
-		size: 40 @ 80;
-		border: (BlBorder paint: Color blue width: 1);
-		background: (Color blue alpha: 0.2);
-		margin: (BlInsets all: 5).
-		root addChild: elt ].
+50 timesRepeat: [
+	| elt |
+	elt := BlElement new
+	size: 40 @ 80;
+	border: (BlBorder paint: Color blue width: 1);
+	background: (Color blue alpha: 0.2);
+	margin: (BlInsets all: 5).
+	root addChild: elt ].
 ```
 
-![Flow layout.](figures/flowlayout.png)
+![Flow layout.](figures/flowlayout.png width=70)
 
 ### Grid layout - BlGridLayout
 
@@ -458,7 +541,67 @@ message.
 		 yourself.
 ```
 
-![Grid layout.](figures/gridlayout.png)
+![Grid layout.](figures/gridlayout.png width=70)
+
+
+### Grid span 
+
+Inside a GridLayout, children do not especially share the same size but they all by default share the same span which means they occupy a single cell of the layout (ie horizontal span = vertical span = 1).
+
+You can change this parameter so your element takes a certain amount of cells.
+
+It is possible to add a child with a larger span and still add smaller elements into the grid layout and fill the space the bigger child left. 
+
+```st
+grid := BlElement new 
+	size: 400 asPoint; 
+	layout: (BlGridLayout horizontal columnCount: 4).
+
+children := (1 to: 12) collect: [ :i | BlElement new background: Color lightGreen; border: (BlBorder paint: Color black width: 1) ].
+
+square := BlElement new 
+	background: Color purple; 
+	size: 100 asPoint.
+square constraintsDo: [ :c | 
+	c grid horizontal span: 2. 
+	c grid vertical span: 2 ].
+	
+1 to: 5 do: [ :i | grid addChild: (children at: i) ].
+grid addChild: square.
+6 to: 12 do: [ :i | grid addChild: (children at: i) ].
+
+grid openInSpace.
+```
+
+![Grid Layout span example.](figures/gridLayout_SpanExample.png width=35&label=gridspan1)
+
+This snippet creates a 4x4 grid and adds a 2x2 purple square in the middle (See Figure *@gridspan1@*). 
+
+We can see that after adding the first five green squares, we add the purple square but we can wonder how the grid layout will display other children added afterwards, here we can see that it fills the blank space as if the grid cells were taken by the purple square didn't exist.
+
+On the example, we can add the notion of visibility on children.
+
+In Bloc, the visibility is an attribute that lets us display or not an element. However, when hiding an element, we have two options : `BlVisibilityHidden` and `BlVisibilityGone`.
+
+Let's start with BlVisibilityGone, it simply removes the element from the drawing phase but it also makes the element ignored in the layouting phase. In this example if we apply a BlVisibilityGone to the first little green square, the purple square gets moved to the left and every element gets a new place (see Figure *@gone@*).
+
+```st
+removed := children first.
+removed visibility: BlVisibilityGone new
+```
+
+![Grid Layout span example - visibility gone](figures/gridLayout_SpanExampleGone.png width=35&label=gone)
+
+`BlVisibilityHidden` just hides the element and doesn't display it with the new drawing phase, but the element is still present and can interact. With this visibility, we see the blank space left by the element and we can inspect it when clicking on this blank space when adding an event handler (see Figure *@hidden@*).
+
+```st
+removed addEventHandlerOn: BlClickEvent do: [ removed inspect ].
+removed visibility: BlVisibilityHidden new.
+```
+
+![Grid Layout span example - visibility hidden](figures/gridLayout_SpanExampleHidden.png width=35&label=hidden)
+
+Note: we can make the element disappear with BlVisibilityGone and then apply a hidden visibility and the element will get its layouting properties back because the element was not "removed from existence", just gone from layouting phase.
 
 ### Frame Layout
 
@@ -523,7 +666,7 @@ container := BlElement new
 			 c horizontal matchParent.
 			 c vertical matchParent ].
 
-	child := BlElement new
+child := BlElement new
 	 size: 400 @ 400;
 	 clipChildren: false;
 	 background: (Color blue alpha: 0.2);
@@ -532,14 +675,14 @@ container := BlElement new
 		 c frame horizontal alignCenter.
 		 c frame vertical alignCenter ].
 
-	container addChild: child.
+container addChild: child.
 ```
 
-![Frame layout](figures/framelayout.png)
+![Frame layout.](figures/framelayout.png width=50)
 
 #### Example: multiple children
 
-Frame can also accept multiple children
+A frame can also accept multiple children.
 
 Multiple children are positioned with size defined by weight. In this case, children
 that match their parents can also be configured to occupy only a fraction of
@@ -573,7 +716,7 @@ root addChild: elt1.
 "...code continue for the 8 other children"
 ```
 
-![Frame layout](figures/MultipleElementFrameWithWeight.png)
+![Frame layout.](figures/MultipleElementFrameWithWeight.png width=80)
 
 #### Example: multiple children
 Multiple children positioned with fixed size.
@@ -679,46 +822,146 @@ taking into account fractions defined in the constraints.
 
 `BlProportionalLayout new`
 
+This layout will *place* and *size* your element base on a proportion of parent
+element. The size of your parent element is ultimately defined by its *width* and
+*height*. Your chilrend element will define a percentage of this witdth and
+height to place themselves, and determine their onw size. By default, your
+element will use the full space of its parent.
+
+Those percentage are define against sides of your parent element, with default
+value :
+
+- left :=0
+- right :=1
+- top :=0
+- bottom :=1
+
+The default value for 
+Let's look at a few example to understand it:
+
+Here, our element is placed in from to top-left corner, and goes down
+to 25% of parent size (right and bottom parameter). We use the default value of 0
+for top and left.
+
+```smalltalk
+	constraintsDo: [ :c | 
+		c proportional horizontal right: 0.25.
+		c proportional vertical bottom: 0.25 ];
+```
+
+In this example, our element is placed at 25% from top-left corner,
+and goes down to 75% of parent size. You may notice that you can use
+both decimal and percent notation to express your element size and position.
+
+```smalltalk
+	constraintsDo: [ :c |
+		c proportional horizontal left: 0.25; right: 0.75.
+		c proportional vertical top: 0.25; bottom: 75 percent ];
+```
+
+In our last example, our element is place at 75% from top-left corner,
+and use remaining space (default for right and bottom is 100%)
+
+```smalltalk
+	constraintsDo: [ :c |
+		c proportional horizontal left: 0.75.
+		c proportional vertical top: 0.75];
+```
+
 #### children constraints
 
 * horizontal
-- left
-- right
+  - left
+  - right
 
 * vertical
-- bottom
-- top
+  - bottom
+  - top
 
 #### example
 
+Full example with all elements placed: 
+
 ```smalltalk
-| aContainer childA childB |
+| aContainer childA childB childC |
 childA := BlElement new
-	id: #childA;
-	background: Color red;
-	constraintsDo: [ :c |
-		c proportional horizontal rightFraction: 0.5 ];
-	yourself.
+				background: Color red;
+				constraintsDo: [ :c | c proportional horizontal right: 0.25.
+					c proportional vertical bottom: 0.25 ];
+				yourself.
 
 childB := BlElement new
-	id: #childB;
-	background: Color green;
-	constraintsDo: [ :c |
-		c proportional horizontal leftFraction: 0.5 ];
-	yourself.
+				background: Color green;
+				constraintsDo: [ :c |
+					c proportional horizontal left: 0.25; right: 0.75.
+					c proportional vertical top: 0.25; bottom: 75 percent ];
+				yourself.
+
+childC := BlElement new
+				background: Color yellow;
+				constraintsDo: [ :c | c proportional horizontal left: 0.75.
+					c proportional vertical top: 0.75];
+				yourself.
 
 aContainer := BlElement new
-	id: #container;
-	background: Color blue;
-	layout: BlProportionalLayout new;
-	size: 100 @ 100;
-	addChild: childA;
-	addChild: childB;
-	constraintsDo: [ :c |
-		c horizontal matchParent.
-		c vertical matchParent ];
-	padding: (BlInsets all: 5);
-	yourself.
+					background: Color blue;
+					layout: BlProportionalLayout new;
+					addChildren: { childA. childB. childC };
+					constraintsDo: [ :c |
+						c horizontal matchParent.
+						c vertical matchParent ];
+					yourself.
 
 aContainer openInNewSpace.
 ```
+
+![Frame layout](figures/proportionalLayout.png)
+
+
+
+
+### Proportional layout
+
+This section should reevaluated - it is a copy and paste from an issue
+[https://github.com/pharo-graphics/Bloc/issues/562](https://github.com/pharo-graphics/Bloc/issues/562)
+
+```
+gap:= 20.
+
+BlElement new
+	constraintsDo: [ :constraints |
+		constraints horizontal exact: 400.
+		constraints vertical exact: 300.
+		constraints padding: (BlInsets all: gap) ];
+	background: Color red;
+	id: #A;
+	layout: BlProportionalLayout new;
+	addChildren: {
+		(BlElement new
+			constraintsDo: [ :constraints |
+				constraints proportional vertical bottom: 0.5.
+				constraints margin: (BlInsets all: gap) ];
+			id: #B;
+			background: Color green;
+			yourself).
+		(BlElement new
+			constraintsDo: [ :constraints |
+				constraints proportional horizontal right: 0.5.
+				constraints proportional vertical top: 0.5.
+				constraints margin: (BlInsets all: gap) ];
+			id: #C;
+			background: Color blue;
+			yourself).
+		(BlElement new
+			constraintsDo: [ :constraints |
+				constraints proportional horizontal left: 0.5.
+				constraints proportional vertical top: 0.5.
+				constraints margin: (BlInsets all: gap) ];
+			id: #D;
+			background: Color yellow;
+			yourself) };
+	yourself
+```
+
+![Proportional layout from issue 562](figures/proportionalFromIssue562.png)
+

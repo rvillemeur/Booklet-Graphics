@@ -4,13 +4,13 @@
 
 A raster graphic represents a two-dimensional picture as a rectangular matrix or grid of square pixels, viewable via a computer display, paper, or other display medium. A raster is technically characterized by the **width** and **height** of the image in **pixels** and by the **number of bits per pixel**.
 
-![Bitmap fish.](fishInPixels.png width=50)
+![Bitmap fish.](figures/fishInPixels.png width=50)
 
 Many raster manipulations map directly onto the mathematical formalisms of linear algebra, where mathematical objects of matrix structure are of central concern.
 
 A bitmap image is a raster image (containing pixel data as opposed to vector images) format. Each pixel of a bitmap image is defined by a single bit or a group of bits. Hence, it is called the bitmap or a map of bits and pixels. A Bitmap image is an uncompressed file format which means, every pixel of an image has its own bit (or group of bits) in the file.
 
-### Form 
+### Form
 
 In Pharo, a `Form` is a rectangular array of pixels, used for holding images.  All pictures, including character images are Forms.
 
@@ -62,7 +62,6 @@ pict colors: map.
 pict initFromArray: bitmap.
 ```
 
-
 ### Fun script
 
 We should revise it. 
@@ -93,7 +92,3 @@ newImgName := (imgFullName copyUpTo: $.) , '_'.
 	(form copy  magnifyBy: i) writePNGFileNamed: newImgName , 'magnifiedTo_' , i asString , '.png' ].
 	(form copy  mapColor: Color black to: Color white) writePNGFileNamed: newImgName , 'colorMap_' , i asString , '.png'.
 ```
-	
-
-
-

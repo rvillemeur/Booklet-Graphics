@@ -17,7 +17,7 @@ behavior of your UI elements.
 
 #### Navigating Bloc's spatial landscape
 
-**Bloc** introduces two key concepts for managing the visual environment:
+**Bloc** introduces two key concepts for managing the visual environment: 
 `BlUniverse` and `BlSpace`. Imagine `BlUniverse` as a container housing a
 collection of individual `BlSpace` instances. Each `BlSpace` represents a
 distinct operating system window where your Pharo application unfolds. If you
@@ -27,50 +27,103 @@ the `BlUniverse`, providing a clear overview of your active spaces.
 #### Ready to Build: Creating Your First Bloc Component
 
 ```smalltalk
-BlElement new
+blueRectangle := BlElement new
 	geometry: BlRectangleGeometry  new;
 	size: 200 @ 100;
 	background: Color blue;
-	openInNewSpace
+	yourself.
+blueRectangle openInNewSpace
 ```
 
-![Creating a basic element.](figures/basicElement.png)
+![Creating a basic element.](figures/basicElement.png width=40)
 
-1. **Start with a blank canvas:** Begin by creating a new `BlElement`. This serves
-as the foundation for your user interface element, initially appearing
+1. **Start with a blank canvas:** Begin by creating a new `BlElement`. 
+This serves as the foundation for your user interface element, initially appearing
 invisible.
-1. **Define its shape:** In Bloc, the element's visual representation is
-determined by its geometry. In this example, we'll use a simple rectangle, but
-more complex shapes are also possible (explored in further detail later).
-1. **Set its dimensions and appearance:** Specify the element's size and color
-to customize its visual characteristics.
-1. **Bring it to life:** Finally, open the element in a new space, making it
-visible on the screen.
+2. **Define its shape:** In Bloc, the element's visual representation is
+determined by its geometry. 
+In this example, we'll use a simple rectangle, but more complex shapes are also possible (explored in further detail later).
+3. **Set its dimensions and appearance:** 
+Specify the element's size and color to customize its visual characteristics.
+4. **Bring it to life:** Finally, open the element in a new space, making it visible on the screen.
+
+
+In our example, we can observe the state of your element by inspecting the `blueRectangle` variable. We can observe a graphical overview of the element, as well as its state:
+
+![Creating a basic element.](figures/basicElementInspection.png width=80)
+
+Elements are organized in trees. 
+To compose tree of elements, we select a root element and we add children.
+
+```smalltalk
+redRectangle := BlElement new
+	geometry: BlRectangleGeometry  new;
+	size: 50 @ 50;
+	background: Color red; 
+	yourself.
+blueRectangle addChild: redRectangle
+```
+
+1. **Start with a root element of your choice:** in our example, we reuse the `blueRectangle` element.
+2. **Define the new element:** This is done like any other element, such as the `blueRectangle` element.
+In this example, we will use a red rectangle, but smaller than the blue one.
+3. **Add the new element as a child of the root element:** 
+The `addChild:` api adds leaf elements to a root.
+4. **Bring it to life:** If the `blueRectangle` is still open, it automatically updates with the `redRectangle`. Else, re-execute all the code to open the root in a new space, making it visible on the screen.
+
+![Composing elements.](figures/composedElements.png width=40)
+
+The red element is placed on the top left corner of its parent, the blue element.
+By default, the position of `BlElement` instances is `0@0`.
+The position of elements is configured by using the `position:` api, such as in the following:
+
+```Smalltalk
+redRectangle position: 75@25. 
+```
+
+![Changing elements positions.](figures/basicElementPosition.png width=40)
+
+Notice that if you did not close the original space opened for the `blueRectangle` element, the display automatically updates when the `redRectangle` position changes.
+
+### Spaces: where elements are displayed
+
+Spaces represent windows in which elements are displayed.
+They are explicitely controlled by instantiating `BlSpace` objects.
+A space has a root element, to which other elements are attached using the `addChild:` api.
+In the following example, we create a new space in which we add our two rectangles:
+
+```Smalltalk
+space := BlSpace new.
+space root addChild: blueRectangle.
+space root addChild: redRectangle.
+space show
+```
+An element can only be the child of a single other element.
+If an element is already added as a child in a space, trying to add that element to a new space will raise an exception. 
+One solution is to create new instances of that element to add it to another space.
+
+### Exercise 1: color wall
+
+Create a $10\times10$ grid of squares, each with a random color, and display it in a space (Figure *@fig:jointype@*).
+ 
+![Creating a wall of colors.](figures/colorWall.png label=fig:colorWall width=80)
 
 
 ### Geometry of BlElement
 
-In Bloc, the visual form and boundaries of your UI elements are determined by
-their geometries. Each element can only possess a single geometry, essentially
-acting as a blueprint for its shape and size. You can visualize an element as a
-specific geometry encapsulated within an invisible rectangular container,
-representing its overall *bounds*.
+In Bloc, the visual form and boundaries of your UI elements are determined by their geometry. 
+Each element can only possess a single geometry, essentially acting as a blueprint for its shape and size.
+You can visualize an element as a specific geometry encapsulated within an invisible rectangular container, representing its overall *bounds*.
 
-Bloc provides a diverse range of pre-defined geometry shapes accessible through
-`BlElementGeometry allSubclasses`. This comprehensive library empowers you to
-construct elements of varying complexities, from basic rectangles and circles to
-more intricate forms.
+Bloc provides a diverse range of pre-defined geometry shapes accessible through `BlElementGeometry allSubclasses`. 
+This comprehensive library empowers you to construct elements of varying complexities, from basic rectangles and circles to more intricate forms.
 
-Bloc excels in facilitating the creation of custom components with advanced
-layout possibilities. Imagine building complex layouts by strategically
-arranging various elements, each defined by its unique geometry, to form a
-cohesive whole.
+Bloc excels in facilitating the creation of custom components with advanced layout possibilities. 
+Imagine building complex layouts by strategically arranging various elements, each defined by its unique geometry, to form a cohesive whole.
 
-While the Alexandrie canvas provides a foundational set of building drawing
-primitives, Bloc offers a richer library of pre-defined shapes and the
-flexibility to construct even more intricate geometries.
+While the Alexandrie canvas provides a foundational set of building drawing primitives, Bloc offers a richer library of pre-defined shapes and the flexibility to construct even more intricate geometries.
 
-![Base geometries.](figures/allGeometry.png)
+![Base geometries.](figures/allGeometry.png width=80)
 
 * **Annulus**: `BlAnnulusSectorGeometry new startAngle: 225; endAngle: 360;   innerRadius: 0.3; outerRadius: 0.9);`
 * **Bezier**: `BlBezierCurveGeometry controlPoints: { 5@0. 25@80. 75@30. 95@100 }`
@@ -93,7 +146,7 @@ painting is a subclass of `BlPaint`, and one of the three:
 - linear gradient color
 - radial gradient color
 
-![Border color type.](figures/bordercolortype.png)
+![Border color type.](figures/bordercolortype.png width=80)
 
 Your border opacity can be specified as well: `opacity: 0.5;`
 
@@ -106,7 +159,7 @@ You also have a pre-defined option, available in a single call:
 - **dashed**
 - **dashed small**
 
-![Border dash.](figures/multipletriangledash.png label=fig:borderdash)
+![Border dash.](figures/multipletriangledash.png label=fig:borderdash width=80)
 
 If the path is not closed, The style extent of your border can be defined with
 
@@ -121,7 +174,7 @@ the join as shown in Figure *@fig:jointype@*:
 - **bevel join**
 - **mitter join**
 
-![Border join type.](figures/borderjointype.png label=fig:jointype)
+![Border join type.](figures/borderjointype.png label=fig:jointype width=80)
 
 You have two options to define your border:
 
@@ -131,7 +184,10 @@ You have two options to define your border:
 The first one is very helpful for solid line definition. The builder lets use
 customize all the details of your border.
 
-### Elements bounds and outskirts
+### Element bounds and outskirts
+
+Bloc allow the user to select where they would like to draw the *border* of a region
+around a shape; either along the inside, outside or centre of the shape.
 
 Let's look at the different possible bounds of your element.
 
@@ -153,7 +209,7 @@ your element), centered, or inside the geometry of the element. The final size
 In Figure *@fig:outskirts@*, the same exact star is drawn 3 times. The only difference is
 the outskirts definition between those 3.
 
-![Outskirts.](figures/multipletriangleoutskirts.png label=fig:outskirts)
+![Outskirts.](figures/multipletriangleoutskirts.png label=fig:outskirts width=80)
 
 If we specify outskirts inside, visual bound and geometry bounds will be the
 same. But if the outskirts is outside, then visual bounds are larger than
@@ -166,7 +222,7 @@ quick set-up: `background: (Color red alpha: 0.8);`
 using rgb color
 
 ```smalltalk
-background: (Color r: 63 g: 81	   b: 181     range: 255);
+background: (Color r: 63 g: 81 b: 181 range: 255);
 ```
 
 using linear gradient
@@ -193,15 +249,15 @@ BlElement new
 	openInSpace
 ```
 
-![Background color.](figures/backgroundcolortype.png)
+![Background color.](figures/backgroundcolortype.png width=80)
 
 ### Element effect
 
-You can get the list of all the effects available executing: `BlElementEffect allSubclasses`
+You can get the list of all the effects available by executing: `BlElementEffect allSubclasses`
 
 #### Simple shadow. 
 
-```smalltalk
+```origin=BlocExamples>>shadow
 BlElement new
 	size: 200 @ 100;
 	geometry: (BlRoundedRectangleGeometry cornerRadius: 2);
@@ -212,7 +268,7 @@ BlElement new
 	    (BlSimpleShadowEffect color: Color orange offset: -10 @ -20)
 ```
 
-![Simple shadow.](figures/simpleshadow.png)
+![Simple shadow.](figures/simpleshadow.png width=80)
 
 Try the following variation.
 
@@ -234,14 +290,14 @@ BlElement new
 	effect: (BlGaussianShadowEffect color: Color yellow offset: 10@20 width: 5)
 ```
 
-![Gaussian shadow.](figures/gaussianshadow.png label=fig:gaussian)
+![Gaussian shadow.](figures/gaussianshadow.png label=fig:gaussian width=80)
 
 ### Element opacity
 
 The element opacity is a value between 0 and 1, 0 meaning completely transparent.
 You can apply opacity to a background, a border, or to your whole element.
 
-![Element opacity.](figures/elementwitopacity.png)
+![Element opacity.](figures/elementwitopacity.png width=80)
 
 ### Element transformation
 
@@ -252,6 +308,33 @@ You can apply transformations to a `BlElement`:
 - scaling
 - reflection
 - etc...
+
+Transformation are affine transformation. For more detail, you can search on the internet, there are countless references to it. To simplify it, I'll say we apply  a transformation matrix (*BlMatrix2D*) to all point of our figure path, each point represented as *BlVector*. 
+
+You have 3 type of tranformation available in Bloc:
+- **BlElementLocalTransformation**: This transformation combine an affine transformation (*BlAffineTransformation* subclasses), with a point of origin (*BlAffineTransformationOrigin* subclasses). By default, origin is the center of your element, BlAffineTransformationCenterOrigin.
+- **BlElementAbsoluteTransformation**: This transformation apply a transformation matrix to your shape, without point of origin. Its  result is similar to *BlElementLocalTransformation*, with origin set to *BlAffineTransformationTopLeftOrigin*
+- **BlElementCompositeTransformation** which are combination of *BlElementLocalTransformation* and/or *BlElementAbsoluteTransformation*
+
+Most of the time, you won't have to deal with matrix definition. You'll use the 
+helper method `transformDo`, and define your transformation using *BlTransformationBuilder*.
+
+When you're defining a transformation using `transformDo:` , you'll, by default, 
+use *BlAffineCompositeTransformation*. All transformation move added subsequently will be composed together.
+The origin will be set to *BlAffineTransformationCenterOrigin*.
+
+Those two transformation below are strictly equivalent, and rotate your element by 45 degree. 
+One use the underlying object, while the other use the helper methods:
+
+```smalltalk
+elt transformation: (BlElementLocalTransformation 
+	newWith: ((BlRotationTransformation new angle: 45) 
+	origin: (BlAffineTransformationCenterOrigin defaultInstance ) )).
+```
+
+```smalltalk
+elt transformDo: [ :t | t rotateBy: 45 ].
+```
 
 A transformation is applied in the scope of the message `transformDo:` as shown below.
 ```
@@ -287,7 +370,11 @@ aContainer addChild: node.
 aContainer forceLayout.
 ```
 
-![Transform example.](figures/transformexample.png label=fig:transform)
+![Transform example.](figures/transformexample.png width=40&label=fig:transform)
+
+transform is something extra that is applied on top of position. For example if
+you want to have a short of animation, you would use transform as it is not 
+taken into account by layouts
 
 #### Transform catches
 
@@ -370,7 +457,7 @@ However, Bloc element composition creates a tree of elements, that can be inspec
 
 Creating and drawing your element
 - subclass `BlElement`
-- dustom drawing is done with `aeFullDrawOn:` method. ae stands for the Alexandrie canvas.
+- custom drawing is done with `aeFullDrawOn:` method. Note that 'ae' stands for the Alexandrie canvas.
 
 You can see the `aeFullDrawOn:`
 ```
@@ -381,15 +468,91 @@ BlElement >> aeFullDrawOn: aCanvas
 	self aeCompositionLayersSortedByElevationDo: [ :each | each paintOn: aCanvas ].
 ```
 
-Element geometry is taken care by:
-the method `BlElement >> aeDrawGeometryOn: aeCanvas`.
-Painting is done on an Alexandrie canvas, then rendered on the host:
-BARenderer (BlHostRenderer) >> render: aHostSpace, display on a AeCairoImageSurface
+Element geometry is taken care by the method `aeDrawGeometryOn: aeCanvas`.
+Painting is done on an Alexandrie canvas, then rendered on the host
+by the method `BARenderer (BlHostRenderer) >> render: aHostSpace` which displays it on a `AeCairoImageSurface`.
 
-Drawing is done through method 'xxx', which receives an alexandrie sparta
-(vector) canvas as an argument.
+Drawing is done through method 'xxx', which receives an Alexandrie
+(vector) canvas (`AeCanvas`) as an argument.
 
-1. aeDrawChildrenOn:
-2. aeDrawOn:
-3. aeDrawGeometryOn:
+1. `aeDrawChildrenOn:`
+2. `aeDrawOn:`
+3. `aeDrawGeometryOn:`
 
+To draw a figure, prepare the canvas using set* methods in the API protocol,
+using this order:
+
+1. set up path
+2. set up background
+3. set up border and outskirts
+4. send a variant of drawFigure*
+drawFigureAndPrepareToClip: true
+ou
+drawFigure. which set clip to false.
+
+Drawing example -  draw hour tick around a circle 
+```
+aeDrawOn: aeCanvas
+	"draw clock tick on frame"
+
+	super aeDrawOn: aeCanvas.
+
+	aeCanvas setOutskirtsCentered.
+
+	0 to: 11 do: [ :items |
+		| target |
+		target := (items * Float pi / 6) cos @ (items * Float pi / 6) sin.
+
+		items % 3 == 0
+			ifTrue: [
+				aeCanvas pathFactory: [ :cairoContext |
+					cairoContext
+						moveTo: center;
+						relativeMoveTo: target * 115;
+						relativeLineTo: target * 35;
+						closePath ].
+
+				aeCanvas setBorderBlock: [
+					aeCanvas
+						setSourceColor: Color black;
+						setBorderWidth: 8 ] ]
+			ifFalse: [
+				aeCanvas pathFactory: [ :cairoContext |
+					cairoContext
+						moveTo: center;
+						relativeMoveTo: target * 125;
+						relativeLineTo: target * 25;
+						closePath ].
+
+				aeCanvas setBorderBlock: [
+					aeCanvas
+						setSourceColor: Color black;
+						setBorderWidth: 6 ] ].
+		aeCanvas drawFigure ]
+```
+
+
+Bloc allow the user to select where they would like to draw the *border* of a region
+around a shape; either along the inside, outside or centre of the shape. This
+is controled throught the outskirts parameter.
+`PathFactory:` is used by default to paint the border (stroke) and the inside (fill)
+of your element. If you want to manage different outskirts, you can refine the
+definiton of the border path with `borderPathFactory:` canvas method by overwriting
+`aeApplyWithInsideBorderTo: aeCanvas element: aBlElement borderWidth: aWidth` 
+and `aeApplyWithInsideBorderTo: aeCanvas element: aBlElement borderWidth: aWidth`
+to specify the border path of your element.
+
+
+### Exercise: lights wall
+Transform your color grid from Figure*@fig:colorWall@* to a wall of lights such as in Figure *@fig:lightsWall@*:
+- compose elements to add circles to the squares
+- build and add glowing effects to the circles
+
+Do not hesitate to explore the various effects and their configuration!
+
+![Creating a wall of lights.](figures/lightsWall.png label=fig:lightsWall width=80)
+
+### Conclusion
+
+`BlElement` is defining a large spectrum of element functionalities. 
+The following chapters will cover layout, event handling, animations and more. 

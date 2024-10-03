@@ -1,13 +1,6 @@
 ## Event handling
 
-
-
-
-
 ### Event handling
-
-
-
 
 ```smalltalk
 BlElement new 
@@ -19,14 +12,17 @@ BlElement new
   openInNewSpace 
 ```
 
-`addEventHandlerOn:do:` returns the new handler so that we can store to remove it in case. 
+`addEventHandlerOn:do:` returns the new handler so that we can store to remove it in case. Add a #yourself send after to return a BlElement.
+
 `when:do:` is now deprecated and rewritten as `addEventHandlerOn:do:`
 SD: we should update the following
 
 Instead of using addEventHandlerOn:do: you can also see users of `addEventHandler:`.
 
 ```
-deco addEventHandler: (BlEventHandler				 on: BlMouseLeaveEvent				 do: [ :event | event currentTarget border: BlBorder empty ]).
+deco addEventHandler: (BlEventHandler 
+						on: BlMouseLeaveEvent
+	 					do: [ :event | event currentTarget border: BlBorder empty ]).
 ```
 
 ### About event bubbling
@@ -34,15 +30,31 @@ deco addEventHandler: (BlEventHandler				 on: BlMouseLeaveEvent				 do: [ :eve
 We should check `example_mouseEvent_descending_bubbling`
 
 
-![Windows nested in each others in Toplo.](figures/4windows.png)
+![Windows nested in each others in Toplo.](figures/4windows.png width=80)
+
+To stop event propagation `anEvent consumed: true`
+
+There is an option to forbid mouse events for an element. 
+You just send `preventMouseEvent` to it
+
+```smalltalk
+"As a more general explanation, all UI related events can be controlled. Have a look at BlElementFlags and BlElementEventDispatcherActivatedEvents and how these classes are used. "
+
+container := BlElement new size: 500 asPoint; border: (BlBorder paint: Color red width: 2).
 
 
+"#addEventHandlerOn: do: returns the new event handler.  add a #yourself send after"
+child1 := BlElement new size: 300 asPoint; background: Color lightGreen; position: 100 asPoint; addEventHandlerOn: BlClickEvent do: [ self inform: '1' ]; yourself .
 
+"There is an option to forbid mouse events for an element. 
+You just send #preventMouseEvent to it."
+child2 := BlElement new size: 200 asPoint; position: 200 asPoint; border: (BlBorder paint: Color blue width: 2);preventMouseEvents.
 
+container addChild: child1.
+container addChild: child2.
 
-
-
-
+container openInSpace.
+```
 
 ### Drag&drop
 
@@ -225,8 +237,17 @@ BlEventHandler
 	do: [ :anEvent | self inform: 'Click!' ]
 ```
 
+how do I remove all eventHandlers from a Blelement?
 
+```smalltalk
+el removeEventHandlersSuchThat: [:e|true] 
+```
 
+or
+
+```smalltalk
+el eventDispatcher removeEventHandlers
+```
 
 ### Keymap at system platform level
 
@@ -252,4 +273,68 @@ BlShortcutWithAction new
 
 
 
+### Drag and Drop
+
+The drop event should be applied to the element that will receive the dragged content.
+`Elt1` uses the dragEnd to know when the drag has ended.
+`Elt2` uses the dropEvent to know when something try to be dropped on it.
+If you drop `elt1` on `elt2`, `elt2` opens an inspector on `elt1`.
+
+```
+| elt1 elt2 space |
+elt1 := BlElement new 
+	background: Color lightBlue;
+	position: 100 asPoint;
+	addEventHandler: BlPullHandler new disallowOutOfBounds;
+	id: #elt1;
+	yourself.
+	
+elt2 := BlElement new 
+	background: Color red;
+	size: 100 asPoint;
+	position: 200 asPoint;
+	id: #elt2;
+	yourself.
+	
+space := BlSpace new.
+space root addChildren: { elt1 . elt2 }.
+ 
+elt2 
+	addEventHandlerOn: BlDropEvent 
+	do: [ :evt | evt gestureSource inspect ].
+elt1 
+	addEventHandlerOn: BlDragEndEvent 
+	do: [ :evt | ].
+ 
+space show.
+```
+
+
+### Manually drag and drop
+
+```
+elt := BlElement new background: Color red; size: 200 asPoint.
+offset := 0.
+
+elt addEventHandlerOn: BlDragStartEvent do: [ :e | e consume.
+    offset := e position - elt position].
+elt addEventHandlerOn: BlDragEvent do: [ :e | elt position: e position - offset ].
+
+elt openInSpace.
+```
+
+
+
+### BlPullHandler
+
+
+```
+parent := BlElement new background: Color lightGreen; size: 600 asPoint.
+elt := BlElement new background: Color red; size: 100 asPoint.
+parent addChild: elt.
+
+elt addEventHandler: BlPullHandler new disallowOutOfBounds.
+
+parent openInSpace.
+```
 

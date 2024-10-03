@@ -1,32 +1,39 @@
-<!inputFile|path=Chapters/bloc/bloc.md!>
+<!inputFile|path=Chapters/bloc/blocStack.md!>
 
-#Low - Level 
+
+# Bloc: A graphics framework
+
+<!inputFile|path=Chapters/bloc/element.md!>
+<!inputFile|path=Chapters/bloc/buildingAWidget.md!>
+<!inputFile|path=Chapters/bloc/layout.md!>
+<!inputFile|path=Chapters/bloc/events.md!>
+<!inputFile|path=Chapters/bloc/text.md!>
+<!inputFile|path=Chapters/bloc/animation.md!>
+<!inputFile|path=Chapters/bloc/complexElement.md!>
+<!inputFile|path=Chapters/bloc/snippets.md!>
+
+# Toplo: Bloc widget set
+
+<!inputFile|path=Chapters/toplo/widget_creation.md!>
+<!inputFile|path=Chapters/toplo/stylesheet.md!>
+<!inputFile|path=Chapters/toplo/skinningAWidget.md!>
+
+#Low - Level: Alexandrie and Harfuzz
 <!inputFile|path=Chapters/Alexandrie/alexandrie.md!>
 <!inputFile|path=Chapters/Alexandrie/text_harfbuzz.md!>
 
-# Bloc
-
-<!inputFile|path=Chapters/bloc/element.md!>
-<!inputFile|path=Chapters/bloc/text.md!>
-<!inputFile|path=Chapters/bloc/layout.md!>
-<!inputFile|path=Chapters/bloc/events.md!>
-<!inputFile|path=Chapters/bloc/animation.md!>
-
-# Toplo
-<!inputFile|path=Chapters/toplo/widget_creation.md!>
-<!inputFile|path=Chapters/toplo/stylesheet.md!>
 
 #Old libraries
 
 <!inputFile|path=Chapters/Athens/Athens.md!>
 
 # For other books: Pharo by Example 12
+<!inputFile|path=Chapters/bloc/BlocForPharoByExample13Book.md!>
 
-%to do a pass
-<!inputFile|path=Chapters/bloc/introduction.md!>
+
 
 # For a booklet on Pharo low level graphics
 <!inputFile|path=Chapters/graphicsfoundation/bitmapFormDisplay.md!>
 <!inputFile|path=Chapters/graphicsfoundation/colorandDepth.md!>
-<!inputFile|path=Chapters/graphicsfoundation/playingWithColor.md!>
 <!inputFile|path=Chapters/graphicsfoundation/drawingBitmap.md!>
+<!inputFile|path=Chapters/graphicsfoundation/png_file.md!>

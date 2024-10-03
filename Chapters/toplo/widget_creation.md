@@ -1,11 +1,8 @@
 ## How to create a raw widget from Toplo
 
-Inspiration taken from Gtk2 widget creation example with a clock
-https://thegnomejournal.wordpress.com/2005/12/02/writing-a-widget-using-cairo-and-gtk2-8/
+
 
 https://thegnomejournal.wordpress.com/2006/02/16/writing-a-widget-using-cairo-and-gtk2-8-part-2/
-
-## introduction
 
 With Bloc, we have low-level tools to define custom graphical elements. However,
 if we want to reproduce the appearance and behavior on our element, we should
@@ -20,6 +17,9 @@ own graphical user interface, like:
 - etc.
 
 Defining our own widget is quite easy. We'll guide you steps by steps.
+
+Inspiration taken from Gtk2 widget creation example with a clock
+https://thegnomejournal.wordpress.com/2005/12/02/writing-a-widget-using-cairo-and-gtk2-8/
 
 ### Define a model
 
@@ -38,8 +38,8 @@ widgets.
 
 ### Widget appearance
 
-Widget on the bare form, is like a ghost. It doesn't have any visual appearance.
-The keep maximum flexibility, Toplo introduces the concept of **skin**, which defines
+Widgets on the bare form is like a ghost. It doesn't have any visual appearance.
+To keep maximum flexibility, Toplo introduces the concept of **skin** which defines
 how to dress your widget. 
 
 You'll have to overwrite two methods to define your skins:
@@ -50,8 +50,8 @@ You'll have to overwrite two methods to define your skins:
 
 You can override *uninstallRawStyle* if that's necessary.
 
-Skins are subclases of `ToSkin` which reacts to event handling. 
-For each  event, your widget can have a different **look**.
+Skins are subclasses of `ToSkin` which reacts to event handling. 
+For each event, your widget can have a different **look**.
 
 Look will get specific properties into `#toStyleStore` properties of its `BlElement` (Under the hood, a `ToStyleStore` instance which stores properties
 such color-primary, color-border, etc. ).
@@ -66,67 +66,141 @@ about it, until you want to.
 ### More here
 
 
+### To use skin and theme
 
-## Theme plumbing logic
+Skins are a good way to customize widgets created with Bloc. 
+Here is a simple how to to define skins for your widget.
 
-Theme defines color and pattern to be applied on widget so they conform to the
-look&feel definition. The theme is added to a bloc space using the method `toTheme:` as in
-`space toTheme: ToBeeTheme light.`
 
-When a Theme is installed
+- Firstly, if your widget is a `BlElement`, you must change it to a `ToElement` (subclass of `BlElement`).
+- You'll need to implement/override the methods `newRawSkin` and `installRawStyle`, for example `newRawSkin` will return an instance of the skin of your widget. ( It can be `newBeeSkin` and `installBeeStyle` ).
+- By subclassing `ToRawSkin`, now you have to create the skin of your widget, that will implement methods related to events.
 
-```lang=smalltalk
-BlSpace >> toTheme: aTheme
+The common one is `installLookEvent` that will apply the changes you give to your skin when you'll install it.
+For example you can use `pressedLookEvent` that will apply the changes you want when you click on the widget.
 
-    self userData at: #toTheme put: aTheme.
-    aTheme onInstalledIn:  self.
-    self root toThemeChanged
-```
+#### skin creation - to be place in another chapter
 
-```lang=smalltalk
-ToSkin >> onInstalledIn: anElement
+There are several ways to set the skin of an element.
 
-    super onInstalledIn: anElement.
-    anElement skinManager installedSkin: self.
-    " install the event handler that will ask for a skin uninstaller when element is removed from space"
-    removeFromSceneGraphHandler := BlEventHandler
-                                        on: BlElementRemovedFromSceneGraphEvent
-                    do: [ :evt | evt currentTarget requestUninstallSkin ].
-    anElement addEventHandler: removeFromSceneGraphHandler
-```
+- The first is to redefine #newRawSkin (or newXXXSkin for a ToXXXTheme )
+- The second way is to use #defaultRawSkin: to set a skin different from the one returned by newRawSkin.
+- The third way it #defaultSkin: that is theme independent.
 
-look at ToStyleSheet class >> defaultWritablePropertyList
+To set its skin, it select in order:
+
+1. An element use the one set by #defaultRawSkin: (if not nil), 
+2. The one set by #defaultSkin: 
+3. The one returned by #newRawSkin.
+
+Thus inside an #installedLookEvent:, an element can set the skin of its sub
+elements by sending it the #defaultRawSkin: message with the desired skin as
+argument :
 
 ```smalltalk
-ToStyleSheetTheme >> initialize 
-    super initialize.
-    styleSheet := ToStyleSheet new.
-    self initializeStyleRules
+ToRawRoundClockSkin>>installLookEvent: anEvent
+
+	super installLookEvent: anEvent.
+	anEvent elementDo: [ :e |
+		e minutesNeedle defaultRawSkin: ToNeedleInRoundClockSkin new.
+	].
+```
+
+```smalltalk
+ToRawSquareClockSkin>>installLookEvent: anEvent
+
+	super installLookEvent: anEvent.
+	anEvent elementDo: [ :e |
+		e minutesNeedle defaultRawSkin: ToNeedleInSquareClockSkin new.
+	]
+```
+
+It should work ok for an element with its direct sub-elements.
+Now, a sub-element’s skin is installed with one delay pulse.
+A sub-element sub-element skin is then installed with two delay pulse, etc…
+So, some undesirable transition effect can arise with such a skin installation
+in case of a deep composition tree.  this is where a stylesheet can be useful
+because of the selection mechanism that allow the skin selection/building in one
+pass
+
+Two precisions:
+
+- If e minutesNeedle return a BlElement, and not a ToElement, then you need to send it #ensureCanManageSkin
+e ensureCanManageSkin. 
+- One can send #withNullSkin to an element to set a NullSkin.
+
+`#ensureCanManageSkin` just add two event handlers: one to generate the element
+states (and then dispatch the look events) and a second to setup the skin when
+the element is added in a space.
+
+## Token properties explanation
+ A token property is a key/value pair. Those pairs are all defined in the `defaultTokenProperties` method of `ToTheme` class.
+So if you want to customize the graphical properties, you can call those Token properties to use them for your widget.
+And if you want to change the values of those properties to make your skin more customizable, you'll need to define the appareance of your theme.
+
+### Implement a Theme
+
+To create your own theme with your own values, you'll have to subclass `ToRawTheme` ( or `ToBeeTheme` ) and implement its class-sided method `defaultTokenProperties` to define the values of your properties.
+For example: 
+
+``` 
+defaultTokenProperties 
+	^ super defaultTokenProperties , 
+		{   (ToTokenProperty name: #'background-color' value: (Color lightGreen)). }
+```
+This will set the token property "background-color" to value "lightGreen"
+
+
+### Little example
+
+In this case: Imagine you've not defined the border and the background of your widget, well you can configure it in the `installLookEvent`: 
+
+```
+installLookEvent: anEvent
+	"when installing the skin, changes the properties of widget mentionned down here"
+
+	super installLookEvent: anEvent.
+	anEvent elementDo: [ :e |
+		e border: (BlBorder
+				 paint: (e valueOfTokenNamed: #'color-border')
+				 width: (e valueOfTokenNamed: #'line-width')).
+		e background: e backgroundPaint ]
+```
+Those tokens can be defined in your theme.
+
+### Last things to do
+
+Now that you have your own skin/theme, you need to link them to your widget.
+So in a class of your `ToElement`, you have to set the `defaultSkin` attribute to a new instance of your skin.
+And for your theme, you need to link it to the space you're using like this:
+
+```	
+space toTheme: (name of your theme) new.
 ```
 
 
-ToStyleSheetTheme (and descendant like ) ToBeeTheme have method
-*initializeStyleRules* which will initialize widget properties
 
-aSpace root skinManager return a ToSkinManager, installed as a property
-#skinManager in a BlElement
+## Notes in bulk
+Your element needs to be a Toplo Element. 
 
-ToThemeExamples >> example_buttons
+* If e minutesNeedle return a BlElement, and not a ToElement, then you need to send it #ensureCanManageSkin `e ensureCanManageSkin.`
 
-Theme is linked to a ToStyleSheet, and a ToThemeVariant (light or dark).
-`ToStyleSheet >> defaultScript` return *ToStyleScript*, which give value for different properties (ToFeatureProperty)
+*  One can send #withNullSkin to an element to set a NullSkin.
 
-ToThemeDarkVariant class >> changedTokenProperties redefine some colors while
-light variant don't touch anything.
+* stylesheet can be useful because of the selection mechanism that allow the skin selection/building in one pass.
+* 
+I’ve no particular solution for this kind of issue.
 
-When space is launched, apply skin recursively to all elements.
-If button defined with raw theme, use the class skin defined in *newRawSkin*
-method. You can inspect stack trace from the *installLookEvent:* method.
+An example of this kind of sub-element skin is the ToLabelInListElementSkin that can be used when a node is selected in a ListElement.
+It is typically set from a ToListElement nodeBuilder (not in a #installLookEvent:  in my examples).
 
-Same pattern is applied from StyleSheet theme, but skin is *ToBeeSkin*,
-and style is installed from *onInstalledIn:* method. Element must then
-implement *installBeeStyle* method.
 
-Style is based on token (*ToTokenProperty*) which defined name/value key for
-element properties.
+A theme is to manage common token values for the set of widgets it is supposed to be designed for. So I’ve added the ToThemePreInstallEvent that you can use ton add new token values in the current theme.
+(Have a look at #example_WithLateBoundPropertyWriter).
+But the implementation of token values storage have to be revised to nicely fulfill this need.
+
+First if you only need a ToInstallLookEvent handling, note that adding a skin class is not mandatory. You can simply redefine the #installRawStyle method instead.
+
+In your #installLookEvent:, I see a lot of code that, I think, should stay in the initialize method because changing the theme Would not lead to the change of your element appearance.
+
 
